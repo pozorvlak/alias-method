@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define NUM_SIDES 1000000
+#define NUM_ROLLS 1000000
+
 typedef struct {
         int id;
         float p;
@@ -90,14 +93,16 @@ int roll(float *dartboard, int *aliases, int num_sides)
 
 int main()
 {
-        float weights[6] = { 1.0/2, 1.0/3, 1.0/24, 1.0/24, 1.0/24, 1.0/24 };
-        int num_sides = 6;
-        normalise(weights, num_sides);
-        float *dartboard = malloc(num_sides * sizeof(float));
-        int *aliases = malloc(num_sides * sizeof(int));
-        make_table(weights, dartboard, aliases, num_sides);
+        float weights[NUM_SIDES];
         int i;
+        for (i = 0; i < NUM_SIDES; i++) {
+                weights[i] = (float) drand48();
+        }
+        normalise(weights, NUM_SIDES);
+        float *dartboard = malloc(NUM_SIDES * sizeof(float));
+        int *aliases = malloc(NUM_SIDES * sizeof(int));
+        make_table(weights, dartboard, aliases, NUM_SIDES);
         for (i = 0; i < 1000000; i++) {
-                roll(dartboard, aliases, num_sides);
+                roll(dartboard, aliases, NUM_SIDES);
         }
 }
