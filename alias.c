@@ -96,21 +96,8 @@ int main()
         float *dartboard = malloc(num_sides * sizeof(float));
         int *aliases = malloc(num_sides * sizeof(int));
         make_table(weights, dartboard, aliases, num_sides);
-        printf("Dartboard:\n");
         int i;
-        for (i = 0; i < num_sides; i++) {
-                printf("%d: %f\n", i, dartboard[i]);
-        }
-        printf("\nAliases:\n");
-        for (i = 0; i < num_sides; i++) {
-                printf("%d: %d\n", i, aliases[i]);
-        }
-        printf("\nRolls:\n");
-        int rolls[6] = { 0, 0, 0, 0, 0, 0 };
-        for (i = 0; i < 6000000; i++) {
-                rolls[roll(dartboard, aliases, num_sides)]++;
-        }
-        for (i = 0; i < num_sides; i++) {
-                printf("%d: %d\n", i, rolls[i]);
+        for (i = 0; i < 1000000; i++) {
+                roll(dartboard, aliases, num_sides);
         }
 }
