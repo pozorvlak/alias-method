@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define NUM_SIDES 1000000
 #define NUM_ROLLS 1000000
@@ -91,18 +92,33 @@ int roll(float *dartboard, int *aliases, int num_sides)
         }
 }
 
+void print_interval(char *description, clock_t start, clock_t finish)
+{
+        printf("%s: %fs\n", description,
+                        (double) (finish - start) / (double) CLOCKS_PER_SEC);
+}
+
 int main()
 {
         float weights[NUM_SIDES];
+        clock_t start = clock();
         int i;
         for (i = 0; i < NUM_SIDES; i++) {
                 weights[i] = (float) drand48();
         }
+        clock_t generated_sides = clock();
         normalise(weights, NUM_SIDES);
+        clock_t normalised = clock();
         float *dartboard = malloc(NUM_SIDES * sizeof(float));
         int *aliases = malloc(NUM_SIDES * sizeof(int));
         make_table(weights, dartboard, aliases, NUM_SIDES);
+        clock_t made_table = clock();
         for (i = 0; i < 1000000; i++) {
                 roll(dartboard, aliases, NUM_SIDES);
         }
+        clock_t rolled = clock();
+        print_interval("Weight generation", start, generated_sides);
+        print_interval("Normalisation", generated_sides, normalised);
+        print_interval("Table construction", normalised, made_table);
+        print_interval("Sampling", made_table, rolled);
 }
