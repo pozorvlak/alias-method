@@ -129,7 +129,7 @@ int main()
                 make_table(weights, dartboard, aliases, NUM_SIDES);
                 clock_t made_table = clock();
 #pragma omp parallel for schedule(static) shared(dartboard, aliases)
-                for (i = 0; i < 1000000; i++) {
+                for (i = 0; i < NUM_ROLLS; i++) {
                         roll(dartboard, aliases, NUM_SIDES);
                 }
                 clock_t rolled = clock();
