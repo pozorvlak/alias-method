@@ -79,8 +79,12 @@ void normalise(float *weights, int num_sides)
 {
         int i;
         float sum;
-        for (i = 0; i < num_sides; i++) {
-                sum += weights[i];
+#pragma omp parallel reduction(+:sum)
+        {
+#pragma omp parallel for
+                for (i = 0; i < num_sides; i++) {
+                        sum += weights[i];
+                }
         }
         for (i = 0; i < num_sides; i++) {
                 weights[i] = num_sides * weights[i]/sum;
