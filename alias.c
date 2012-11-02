@@ -142,4 +142,5 @@ int main()
         print_interval("Normalisation", normalisation);
         print_interval("Table construction", construction);
         print_interval("Sampling", sampling);
+        return 0;
 }
