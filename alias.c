@@ -128,8 +128,16 @@ int main()
                 float weights[NUM_SIDES];
                 clock_t start = clock();
                 int i;
-                for (i = 0; i < NUM_SIDES; i++) {
-                        weights[i] = (float) drand48();
+#pragma omp parallel
+                {
+                        rand_buffer *buffer = calloc(1024, sizeof(rand_buffer));
+#pragma omp for
+                        for (i = 0; i < NUM_SIDES; i++) {
+                                double w;
+                                drand48_r(buffer, &w);
+                                weights[i] = (float) w;
+                        }
+                        free(buffer);
                 }
                 clock_t generated_sides = clock();
                 normalise(weights, NUM_SIDES);
