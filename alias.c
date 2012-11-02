@@ -151,6 +151,8 @@ int main()
                 normalisation += (normalised - generated_sides);
                 construction += (made_table - normalised);
                 sampling += (rolled - made_table);
+                free(aliases);
+                free(dartboard);
         }
         print_interval("Weight generation", generation);
         print_interval("Normalisation", normalisation);
