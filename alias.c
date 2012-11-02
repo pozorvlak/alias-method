@@ -41,8 +41,8 @@ void split_large_small(float* weights, bar *small_bars, bar *large_bars,
 
 void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
 {
-        bar *small_bars = malloc(num_sides * sizeof(float));
-        bar *large_bars = malloc(num_sides * sizeof(float));
+        bar *small_bars = malloc(num_sides * sizeof(bar));
+        bar *large_bars = malloc(num_sides * sizeof(bar));
         int num_small, num_large;
         split_large_small(weights, small_bars, large_bars,
                         &num_small, &num_large, num_sides);
@@ -72,6 +72,8 @@ void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
                 aliases[large.id] = large.id;
                 num_large--;
         }
+        free(small_bars);
+        free(large_bars);
 }
 
 /* Scale weights so their mean is 1 */
@@ -114,7 +116,7 @@ void print_interval(char *description, clock_t interval)
 int main()
 {
         int j;
-        clock_t generation, normalisation, construction, sampling;
+        clock_t generation = 0, normalisation = 0, construction = 0, sampling = 0;
 #pragma omp parallel
         {
                 if (omp_get_thread_num() == 0) {
@@ -158,6 +160,8 @@ int main()
                 normalisation += (normalised - generated_sides);
                 construction += (made_table - normalised);
                 sampling += (rolled - made_table);
+                free(aliases);
+                free(dartboard);
         }
         print_interval("Weight generation", generation);
         print_interval("Normalisation", normalisation);
