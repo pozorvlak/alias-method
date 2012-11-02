@@ -115,7 +115,7 @@ void print_interval(char *description, clock_t interval)
 int main()
 {
         int j;
-        clock_t generation, normalisation, construction, sampling;
+        clock_t generation = 0, normalisation = 0, construction = 0, sampling = 0;
 #pragma omp parallel
         {
                 if (omp_get_thread_num() == 0) {
