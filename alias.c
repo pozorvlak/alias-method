@@ -5,6 +5,11 @@
 #define NUM_SIDES 1000000
 #define NUM_ROLLS 1000000
 
+#ifndef _OPENMP
+int omp_get_num_threads() { return 1; }
+int omp_get_thread_num()  { return 0; }
+#endif
+
 typedef struct {
         int id;
         float p;
@@ -102,6 +107,13 @@ int main()
 {
         int j;
         clock_t generation, normalisation, construction, sampling;
+#pragma omp parallel
+        {
+                if (omp_get_thread_num() == 0) {
+                        printf("Running with %d threads\n",
+                                        omp_get_num_threads());
+                }
+        }
         for (j = 0; j < 100; j++) {
                 float weights[NUM_SIDES];
                 clock_t start = clock();
