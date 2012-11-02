@@ -128,11 +128,9 @@ int main()
                 int *aliases = malloc(NUM_SIDES * sizeof(int));
                 make_table(weights, dartboard, aliases, NUM_SIDES);
                 clock_t made_table = clock();
-#pragma omp parallel shared(dartboard, aliases)
-                {
-                        for (i = 0; i < 1000000; i++) {
-                                roll(dartboard, aliases, NUM_SIDES);
-                        }
+#pragma omp parallel for schedule(static) shared(dartboard, aliases)
+                for (i = 0; i < 1000000; i++) {
+                        roll(dartboard, aliases, NUM_SIDES);
                 }
                 clock_t rolled = clock();
                 generation += (generated_sides - start);
