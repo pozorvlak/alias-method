@@ -92,33 +92,41 @@ int roll(float *dartboard, int *aliases, int num_sides)
         }
 }
 
-void print_interval(char *description, clock_t start, clock_t finish)
+void print_interval(char *description, clock_t interval)
 {
         printf("%s: %fs\n", description,
-                        (double) (finish - start) / (double) CLOCKS_PER_SEC);
+                        (double) interval / (double) CLOCKS_PER_SEC);
 }
 
 int main()
 {
-        float weights[NUM_SIDES];
-        clock_t start = clock();
-        int i;
-        for (i = 0; i < NUM_SIDES; i++) {
-                weights[i] = (float) drand48();
+        int j;
+        clock_t generation, normalisation, construction, sampling;
+        for (j = 0; j < 100; j++) {
+                float weights[NUM_SIDES];
+                clock_t start = clock();
+                int i;
+                for (i = 0; i < NUM_SIDES; i++) {
+                        weights[i] = (float) drand48();
+                }
+                clock_t generated_sides = clock();
+                normalise(weights, NUM_SIDES);
+                clock_t normalised = clock();
+                float *dartboard = malloc(NUM_SIDES * sizeof(float));
+                int *aliases = malloc(NUM_SIDES * sizeof(int));
+                make_table(weights, dartboard, aliases, NUM_SIDES);
+                clock_t made_table = clock();
+                for (i = 0; i < 1000000; i++) {
+                        roll(dartboard, aliases, NUM_SIDES);
+                }
+                clock_t rolled = clock();
+                generation += (generated_sides - start);
+                normalisation += (normalised - generated_sides);
+                construction += (made_table - normalised);
+                sampling += (rolled - made_table);
         }
-        clock_t generated_sides = clock();
-        normalise(weights, NUM_SIDES);
-        clock_t normalised = clock();
-        float *dartboard = malloc(NUM_SIDES * sizeof(float));
-        int *aliases = malloc(NUM_SIDES * sizeof(int));
-        make_table(weights, dartboard, aliases, NUM_SIDES);
-        clock_t made_table = clock();
-        for (i = 0; i < 1000000; i++) {
-                roll(dartboard, aliases, NUM_SIDES);
-        }
-        clock_t rolled = clock();
-        print_interval("Weight generation", start, generated_sides);
-        print_interval("Normalisation", generated_sides, normalised);
-        print_interval("Table construction", normalised, made_table);
-        print_interval("Sampling", made_table, rolled);
+        print_interval("Weight generation", generation);
+        print_interval("Normalisation", normalisation);
+        print_interval("Table construction", construction);
+        print_interval("Sampling", sampling);
 }
