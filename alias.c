@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "CStopWatch.h"
 
 #define NUM_SIDES 1000000
 #define NUM_ROLLS 1000000
@@ -162,16 +163,19 @@ int roll(float *dartboard, int *aliases, int num_sides, rand_buffer* buffer)
         }
 }
 
-void print_interval(char *description, clock_t interval)
+void print_interval(char *description, unsigned long interval)
 {
         printf("%s: %.2fs\n", description,
-                        (double) interval / (double) CLOCKS_PER_SEC);
+                        (double) interval / (double) 1000000);
 }
 
 int main()
 {
         int j;
-        clock_t generation = 0, normalisation = 0, construction = 0, sampling = 0;
+        DEFSW(generation);
+        DEFSW(normalisation);
+        DEFSW(construction);
+        DEFSW(sampling);
 #pragma omp parallel
         {
 #pragma omp master
@@ -180,39 +184,37 @@ int main()
                 srand48_r(omp_get_thread_num(), buffer);
         }
         for (j = 0; j < 100; j++) {
-                clock_t start, generated_sides, normalised, made_table, rolled;
                 float *weights = malloc(NUM_SIDES * sizeof(float));
                 float *dartboard = malloc(NUM_SIDES * sizeof(float));
                 int *aliases = malloc(NUM_SIDES * sizeof(int));
-                start = clock();
                 int i;
+                SWTICK(generation);
 #pragma omp parallel for shared(weights)
                 for (i = 0; i < NUM_SIDES; i++) {
                         double w;
                         drand48_r(buffer, &w);
                         weights[i] = (float) w;
-                }
-                generated_sides = clock();
+                }       
+                SWTOCK(generation);
+                SWTICK(normalisation);
                 normalise(weights, NUM_SIDES);
-                normalised = clock();
+                SWTOCK(normalisation);
+                SWTICK(construction);
                 make_table(weights, dartboard, aliases, NUM_SIDES);
-                made_table = clock();
+                SWTOCK(construction);
+                SWTICK(sampling);
 #pragma omp parallel for shared(dartboard, aliases) schedule(static) 
                 for (i = 0; i < NUM_ROLLS; i++) {
                         roll(dartboard, aliases, NUM_SIDES, buffer);
                 }
-                rolled = clock();
-                generation += (generated_sides - start);
-                normalisation += (normalised - generated_sides);
-                construction += (made_table - normalised);
-                sampling += (rolled - made_table);
+                SWTOCK(sampling);
                 free(aliases);
                 free(dartboard);
                 free(weights);
         }
-        print_interval("Weight generation", generation);
-        print_interval("Normalisation", normalisation);
-        print_interval("Table construction", construction);
-        print_interval("Sampling", sampling);
+        print_interval("Weight generation", SWGET(generation));
+        print_interval("Normalisation", SWGET(normalisation));
+        print_interval("Table construction", SWGET(construction));
+        print_interval("Sampling", SWGET(sampling));
         return 0;
 }
