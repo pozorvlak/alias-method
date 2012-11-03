@@ -109,7 +109,7 @@ int roll(float *dartboard, int *aliases, int num_sides, rand_buffer* buffer)
 
 void print_interval(char *description, clock_t interval)
 {
-        printf("%s: %fs\n", description,
+        printf("%s: %.2fs\n", description,
                         (double) interval / (double) CLOCKS_PER_SEC);
 }
 
