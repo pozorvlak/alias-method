@@ -45,7 +45,7 @@ void split_large_small(float* weights, bar *small_bars, bar *large_bars,
                 int num_small = 0;
                 int num_large = 0;
                 bar *small_bar = shared_small_bars + me * splitsize;
-                bar *large_bar = shared_large_bars + me * splitsize);
+                bar *large_bar = shared_large_bars + me * splitsize;
 #pragma omp for nowait schedule(static)
                 for (i = 0; i < num_sides; i++) {
                         bar new_bar;
