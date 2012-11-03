@@ -123,17 +123,22 @@ void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
                         num_large--;
                 }
         }
-        while (num_small > 0) {
-                bar small = small_bars[num_small - 1];
-                dartboard[small.id] = 1;
-                aliases[small.id] = small.id;
-                num_small--;
-        }
-        while (num_large > 0) {
-                bar large = large_bars[num_large - 1];
-                dartboard[large.id] = 1;
-                aliases[large.id] = large.id;
-                num_large--;
+        
+        int i;
+#pragma omp parallel
+        {
+#pragma omp for nowait
+                for (i = 0; i < num_large; i++) {
+                        bar small = small_bars[i];
+                        dartboard[small.id] = 1;
+                        aliases[small.id] = small.id;
+                }
+#pragma omp for nowait
+                for (i = 0; i < num_large; i++) {
+                        bar large = large_bars[i];
+                        dartboard[large.id] = 1;
+                        aliases[large.id] = large.id;
+                }
         }
         free(small_bars);
         free(large_bars);
