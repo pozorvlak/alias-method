@@ -8,11 +8,21 @@
 #define INLINE inline __attribute__((always_inline))
 #endif
 
+#define TIMERS
+
+#ifdef TIMERS
 #define SWTICK(NAME) _Pragma("omp master") __tick(&sw ## NAME)
 #define SWTOCK(NAME) _Pragma("omp master") __tock(&sw ## NAME)
 #define SWRESET(NAME) _Pragma("omp master") __reset(&sw ## NAME)
 #define SWGET(NAME) __get(&sw ## NAME)
 #define DEFSW(NAME) Stopwatch sw ## NAME; SWRESET(NAME)
+#else
+#define SWTICK(NAME)
+#define SWTOCK(NAME)
+#define SWRESET(NAME)
+#define SWGET(NAME) 0
+#define DEFSW(NAME)
+#endif
 
 typedef struct {
   unsigned long totaltime;
