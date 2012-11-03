@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define NUM_SIDES 1000000
@@ -8,6 +9,7 @@
 #ifndef _OPENMP
 int omp_get_num_threads() { return 1; }
 int omp_get_thread_num()  { return 0; }
+int omp_get_max_threads() { return 1; }
 #endif
 
 typedef struct {
@@ -20,23 +22,73 @@ typedef struct drand48_data rand_buffer;
 void split_large_small(float* weights, bar *small_bars, bar *large_bars,
                 int *num_small_ptr, int *num_large_ptr, int num_sides)
 {
+        int num_threads = omp_get_max_threads();
+        bar *shared_small_bars = (bar *) malloc (num_sides * sizeof(bar));
+        bar *shared_large_bars = (bar *) malloc (num_sides * sizeof(bar));
+        int all_num_small[num_threads];
+        int all_num_large[num_threads];
+        int i;
+
+#pragma omp parallel
+        {
+                int me = omp_get_thread_num();
+                int num_small = 0;
+                int num_large = 0;
+                bar *small_bar = shared_small_bars + ((me * num_sides) / num_threads);
+                bar *large_bar = shared_large_bars + ((me * num_sides) / num_threads);
+#pragma omp for nowait schedule(static)
+                for (i = 0; i < num_sides; i++) {
+                        bar new_bar;
+                        new_bar.p = weights[i];
+                        new_bar.id = i;
+                        if (new_bar.p < 1) {
+                                *small_bar = new_bar;
+                                small_bar++;
+                                num_small++;
+                        } else {
+                                *large_bar = new_bar;
+                                large_bar++;
+                                num_large++;
+                        }
+                }
+                
+                all_num_small[me] = num_small;
+                all_num_large[me] = num_large;
+
+#pragma omp barrier
+
+                int local_small = 0;
+                int local_large = 0;
+                int j;
+                
+                for (j = 0; j < me; j++) {
+                        local_small += all_num_small[j];
+                        local_large += all_num_large[j];
+                }
+                
+                bar *small_bar_out = small_bars + local_small;
+                bar *large_bar_out = large_bars + local_large;
+                
+                small_bar -= num_small;
+                large_bar -= num_large;
+
+                memcpy(small_bar_out, small_bar, num_small * sizeof(bar));
+                memcpy(large_bar_out, large_bar, num_large * sizeof(bar));
+                
+        }
+        
         int num_small = 0;
         int num_large = 0;
-        int i;
-        for (i = 0; i < num_sides; i++) {
-                bar new_bar;
-                new_bar.p = weights[i];
-                new_bar.id = i;
-                if (new_bar.p < 1) {
-                        small_bars[num_small] = new_bar;
-                        num_small++;
-                } else {
-                        large_bars[num_large] = new_bar;
-                        num_large++;
-                }
+        
+        for (i = 0; i < num_threads; i++) {
+          num_small += all_num_small[i];
+          num_large += all_num_large[i];
         }
         *num_small_ptr = num_small;
         *num_large_ptr = num_large;
+        
+        free(shared_small_bars);
+        free(shared_large_bars);
 }
 
 void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
