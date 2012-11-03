@@ -119,49 +119,41 @@ int main()
         clock_t generation = 0, normalisation = 0, construction = 0, sampling = 0;
 #pragma omp parallel
         {
-                if (omp_get_thread_num() == 0) {
-                        printf("Running with %d threads\n",
-                                        omp_get_num_threads());
-                }
+#pragma omp master
+                printf("Running with %d threads\n",
+                                omp_get_num_threads());
         }
         for (j = 0; j < 100; j++) {
-                float weights[NUM_SIDES];
-                clock_t start = clock();
-                int i;
-#pragma omp parallel
-                {
-                        rand_buffer *buffer = calloc(1024, sizeof(rand_buffer));
-#pragma omp for
-                        for (i = 0; i < NUM_SIDES; i++) {
-                                double w;
-                                drand48_r(buffer, &w);
-                                weights[i] = (float) w;
-                        }
-                        free(buffer);
-                }
-                clock_t generated_sides = clock();
-                normalise(weights, NUM_SIDES);
-                clock_t normalised = clock();
+                clock_t start, generated_sides, normalised, made_table, rolled;
+                rand_buffer buffer[1024];
+                float *weights = malloc(NUM_SIDES * sizeof(float));
                 float *dartboard = malloc(NUM_SIDES * sizeof(float));
                 int *aliases = malloc(NUM_SIDES * sizeof(int));
-                make_table(weights, dartboard, aliases, NUM_SIDES);
-                clock_t made_table = clock();
-#pragma omp parallel shared(dartboard, aliases)
-                {
-                        rand_buffer *buffer = calloc(1024, sizeof(rand_buffer));
-#pragma omp for schedule(static) 
-                        for (i = 0; i < NUM_ROLLS; i++) {
-                                roll(dartboard, aliases, NUM_SIDES, buffer);
-                        }
-                        free(buffer);
+                start = clock();
+                int i;
+#pragma omp parallel for private(buffer) shared(weights)
+                for (i = 0; i < NUM_SIDES; i++) {
+                        double w;
+                        drand48_r(buffer, &w);
+                        weights[i] = (float) w;
                 }
-                clock_t rolled = clock();
+                generated_sides = clock();
+                normalise(weights, NUM_SIDES);
+                normalised = clock();
+                make_table(weights, dartboard, aliases, NUM_SIDES);
+                made_table = clock();
+#pragma omp parallel for private(buffer) shared(dartboard, aliases) schedule(static) 
+                for (i = 0; i < NUM_ROLLS; i++) {
+                        roll(dartboard, aliases, NUM_SIDES, buffer);
+                }
+                rolled = clock();
                 generation += (generated_sides - start);
                 normalisation += (normalised - generated_sides);
                 construction += (made_table - normalised);
                 sampling += (rolled - made_table);
                 free(aliases);
                 free(dartboard);
+                free(weights);
         }
         print_interval("Weight generation", generation);
         print_interval("Normalisation", normalisation);
