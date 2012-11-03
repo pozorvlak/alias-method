@@ -11,6 +11,7 @@
 int omp_get_num_threads() { return 1; }
 int omp_get_thread_num()  { return 0; }
 int omp_get_max_threads() { return 1; }
+void omp_set_num_threads(int i) {}
 #endif
 
 typedef struct {
@@ -175,8 +176,12 @@ void print_interval(char *description, unsigned long interval)
                         (double) interval / (double) 1000000);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+        if (argc > 1) {
+          omp_set_num_threads(atoi(argv[1]));
+        }
+
         int j;
         DEFSW(generation);
         DEFSW(normalisation);
