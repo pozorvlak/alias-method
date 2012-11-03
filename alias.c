@@ -19,6 +19,9 @@ typedef struct {
 
 typedef struct drand48_data rand_buffer;
 
+rand_buffer buffer[1];
+#pragma omp threadprivate(buffer)
+
 void split_large_small(float* weights, bar *small_bars, bar *large_bars,
                 int *num_small_ptr, int *num_large_ptr, int num_sides)
 {
@@ -174,16 +177,16 @@ int main()
 #pragma omp master
                 printf("Running with %d threads\n",
                                 omp_get_num_threads());
+                srand48_r(omp_get_thread_num(), buffer);
         }
         for (j = 0; j < 100; j++) {
                 clock_t start, generated_sides, normalised, made_table, rolled;
-                rand_buffer buffer[1024];
                 float *weights = malloc(NUM_SIDES * sizeof(float));
                 float *dartboard = malloc(NUM_SIDES * sizeof(float));
                 int *aliases = malloc(NUM_SIDES * sizeof(int));
                 start = clock();
                 int i;
-#pragma omp parallel for private(buffer) shared(weights)
+#pragma omp parallel for shared(weights)
                 for (i = 0; i < NUM_SIDES; i++) {
                         double w;
                         drand48_r(buffer, &w);
@@ -194,7 +197,7 @@ int main()
                 normalised = clock();
                 make_table(weights, dartboard, aliases, NUM_SIDES);
                 made_table = clock();
-#pragma omp parallel for private(buffer) shared(dartboard, aliases) schedule(static) 
+#pragma omp parallel for shared(dartboard, aliases) schedule(static) 
                 for (i = 0; i < NUM_ROLLS; i++) {
                         roll(dartboard, aliases, NUM_SIDES, buffer);
                 }
