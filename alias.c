@@ -150,9 +150,12 @@ void normalise(float *weights, int num_sides)
                 for (i = 0; i < num_sides; i++) {
                         sum += weights[i];
                 }
+                
+                float temp = num_sides/sum;
+                
 #pragma omp for
                 for (i = 0; i < num_sides; i++) {
-                        weights[i] = num_sides * weights[i]/sum;
+                        weights[i] *= temp;
                 }
         }
 }
