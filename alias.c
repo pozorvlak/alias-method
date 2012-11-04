@@ -72,13 +72,75 @@ void split_large_small(float* weights, bar *small_bars, bar *large_bars,
 void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
 {
         SWTICK(split);
-        bar *small_bars = malloc(num_sides * sizeof(bar));
-        bar *large_bars = malloc(num_sides * sizeof(bar));
-        int num_small, num_large;
-        split_large_small(weights, small_bars, large_bars,
-                        &num_small, &num_large, num_sides);
+        int i;
+        int num_threads = omp_get_max_threads();
+        bar *all_small_bars = malloc(num_sides * sizeof(bar));
+        bar *all_large_bars = malloc(num_sides * sizeof(bar));
+        int all_num_small[num_threads], all_num_large[num_threads];
+
+        int splitsize = num_sides / num_threads;
+        if (num_sides % num_threads != 0) {
+          splitsize++;
+        }
+
+        split_large_small(weights, all_small_bars, all_large_bars,
+                        all_num_small, all_num_large, num_sides, splitsize);
+
         SWTOCK(split);
         SWTICK(construction);
+
+        bar *small_bars, *large_bars;
+        int num_small, num_large;
+#ifdef _OPENMP
+#pragma omp parallel private(small_bars, large_bars, num_small, num_large)
+        {
+                int me = omp_get_thread_num();
+                small_bars = all_small_bars + (me * splitsize);
+                large_bars = all_large_bars + (me * splitsize);
+                num_small = all_num_small[me];
+                num_large = all_num_large[me];
+                while ((num_small > 0) && (num_large > 0)) {
+                        bar small = small_bars[num_small - 1];
+                        bar large = large_bars[num_large - 1];
+                        dartboard[small.id] = small.p;
+                        aliases[small.id] = large.id;
+                        large.p = small.p + large.p - 1;
+                        if (large.p >= 1) {
+                                large_bars[num_large - 1] = large;
+                                num_small--;
+                        } else {
+                                small_bars[num_small - 1] = large;
+                                num_large--;
+                        }
+                }
+                all_num_small[me] = num_small;
+                all_num_large[me] = num_large;
+        }
+
+        num_small = all_num_small[0];
+        num_large = all_num_large[0];
+        bar *small_out, *large_out;
+        small_bars = all_small_bars;
+        small_out = all_small_bars;
+        large_bars = all_large_bars;
+        large_out = all_large_bars;
+        for (i = 1; i < num_threads; i++) {
+                small_out += all_num_small[i-1];
+                small_bars += splitsize;
+                num_small += all_num_small[i];
+                memcpy(small_out, small_bars, all_num_small[i] * sizeof(bar));
+                large_out += all_num_large[i-1];
+                large_bars += splitsize;
+                num_large += all_num_large[i];
+                memcpy(large_out, large_bars, all_num_large[i] * sizeof(bar));
+        }
+#else
+        num_small = all_num_small[0];
+        num_large = all_num_large[0];
+#endif
+        
+        small_bars = all_small_bars;
+        large_bars = all_large_bars;
         while ((num_small > 0) && (num_large > 0)) {
                 bar small = small_bars[num_small - 1];
                 bar large = large_bars[num_large - 1];
@@ -86,16 +148,17 @@ void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
                 aliases[small.id] = large.id;
                 large.p = small.p + large.p - 1;
                 if (large.p >= 1) {
-                        large_bars[num_large] = large;
+                        large_bars[num_large - 1] = large;
                         num_small--;
                 } else {
-                        small_bars[num_small] = large;
+                        small_bars[num_small - 1] = large;
                         num_large--;
                 }
         }
+
         SWTOCK(construction);
         SWTICK(final);        
-        int i;
+
 #pragma omp parallel
         {
 #pragma omp for nowait
