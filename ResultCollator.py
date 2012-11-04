@@ -113,7 +113,7 @@ for curfile in files:
                     
                     else:
                         speedup = SeqTime / SpecTime
-                        line += "%.2f," % speedup
+                        line += "%f," % speedup
                     
                 speedups_file.write(line + "\n")
 

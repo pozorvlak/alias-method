@@ -193,7 +193,7 @@ int roll(float *dartboard, int *aliases, int num_sides, rand_buffer* buffer)
 
 void print_interval(char *description, unsigned long interval)
 {
-        printf("%s: %.2fs\n", description,
+        printf("%s: %fs\n", description,
                         (double) interval / (double) 1000000);
 }
 
