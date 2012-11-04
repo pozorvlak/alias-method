@@ -34,27 +34,18 @@ rand_buffer buffer[1];
 
 
 void split_large_small(float* weights, bar *small_bars, bar *large_bars,
-                int *num_small_ptr, int *num_large_ptr, int num_sides)
+                int *num_small_ptr, int *num_large_ptr, int num_sides, int splitsize)
 {
         int num_threads = omp_get_max_threads();
-        bar *shared_small_bars = (bar *) malloc (num_sides * sizeof(bar));
-        bar *shared_large_bars = (bar *) malloc (num_sides * sizeof(bar));
-        int all_num_small[num_threads];
-        int all_num_large[num_threads];
         int i;
-
-        int splitsize = num_sides / num_threads;
-        if (num_sides % num_threads != 0) {
-          splitsize++;
-        }
 
 #pragma omp parallel
         {
                 int me = omp_get_thread_num();
                 int num_small = 0;
                 int num_large = 0;
-                bar *small_bar = shared_small_bars + me * splitsize;
-                bar *large_bar = shared_large_bars + me * splitsize;
+                bar *small_bar = small_bars + me * splitsize;
+                bar *large_bar = large_bars + me * splitsize;
 #pragma omp for nowait schedule(static)
                 for (i = 0; i < num_sides; i++) {
                         bar new_bar;
@@ -71,43 +62,11 @@ void split_large_small(float* weights, bar *small_bars, bar *large_bars,
                         }
                 }
                 
-                all_num_small[me] = num_small;
-                all_num_large[me] = num_large;
-
-#pragma omp barrier
-
-                int local_small = 0;
-                int local_large = 0;
-                int j;
-                
-                for (j = 0; j < me; j++) {
-                        local_small += all_num_small[j];
-                        local_large += all_num_large[j];
-                }
-                
-                bar *small_bar_out = small_bars + local_small;
-                bar *large_bar_out = large_bars + local_large;
-                
-                small_bar -= num_small;
-                large_bar -= num_large;
-
-                memcpy(small_bar_out, small_bar, num_small * sizeof(bar));
-                memcpy(large_bar_out, large_bar, num_large * sizeof(bar));
+                num_small_ptr[me] = num_small;
+                num_large_ptr[me] = num_large;
                 
         }
         
-        int num_small = 0;
-        int num_large = 0;
-        
-        for (i = 0; i < num_threads; i++) {
-          num_small += all_num_small[i];
-          num_large += all_num_large[i];
-        }
-        *num_small_ptr = num_small;
-        *num_large_ptr = num_large;
-        
-        free(shared_small_bars);
-        free(shared_large_bars);
 }
 
 void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
