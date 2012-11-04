@@ -140,7 +140,7 @@ void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
 #pragma omp parallel
         {
 #pragma omp for nowait
-                for (i = 0; i < num_large; i++) {
+                for (i = 0; i < num_small; i++) {
                         bar small = small_bars[i];
                         dartboard[small.id] = 1;
                         aliases[small.id] = small.id;
