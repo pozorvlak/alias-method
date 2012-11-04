@@ -27,6 +27,7 @@ DEFSW(split);
 DEFSW(construction);
 DEFSW(final);
 DEFSW(sampling);
+DEFSW(total);
 
 
 rand_buffer buffer[1];
@@ -227,12 +228,14 @@ int main(int argc, char *argv[])
         SWRESET(construction);
         SWRESET(final);
         SWRESET(sampling);
+        SWRESET(total);
 
         if (argc > 1) {
           omp_set_num_threads(atoi(argv[1]));
         }
 
         int j;
+        SWTICK(total);
 #pragma omp parallel
         {
 #pragma omp master
@@ -267,11 +270,13 @@ int main(int argc, char *argv[])
                 free(dartboard);
                 free(weights);
         }
+        SWTOCK(total);
         print_interval("Weight generation", SWGET(generation));
         print_interval("Normalisation", SWGET(normalisation));
         print_interval("Table split", SWGET(split));
         print_interval("Table construction", SWGET(construction));
         print_interval("Table final", SWGET(final));
         print_interval("Sampling", SWGET(sampling));
+        print_interval("Total", SWGET(total));
         return 0;
 }

@@ -13,8 +13,11 @@ speedups_file = open(speedups_file, 'w')
 
 timers = ["Weight generation", 
           "Normalisation", 
+          "Table split",
           "Table construction", 
-          "Sampling"
+          "Table final",
+          "Sampling",
+          "Total"
           ]
                     
 for curfile in files:
