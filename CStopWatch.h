@@ -15,7 +15,7 @@
 #define SWTOCK(NAME) _Pragma("omp master") __tock(&sw ## NAME)
 #define SWRESET(NAME) _Pragma("omp master") __reset(&sw ## NAME)
 #define SWGET(NAME) __get(&sw ## NAME)
-#define DEFSW(NAME) Stopwatch sw ## NAME; SWRESET(NAME)
+#define DEFSW(NAME) Stopwatch sw ## NAME;
 #else
 #define SWTICK(NAME)
 #define SWTOCK(NAME)

@@ -21,6 +21,14 @@ typedef struct {
 
 typedef struct drand48_data rand_buffer;
 
+DEFSW(generation);
+DEFSW(normalisation);
+DEFSW(split);
+DEFSW(construction);
+DEFSW(final);
+DEFSW(sampling);
+
+
 rand_buffer buffer[1];
 #pragma omp threadprivate(buffer)
 
@@ -104,11 +112,14 @@ void split_large_small(float* weights, bar *small_bars, bar *large_bars,
 
 void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
 {
+        SWTICK(split);
         bar *small_bars = malloc(num_sides * sizeof(bar));
         bar *large_bars = malloc(num_sides * sizeof(bar));
         int num_small, num_large;
         split_large_small(weights, small_bars, large_bars,
                         &num_small, &num_large, num_sides);
+        SWTOCK(split);
+        SWTICK(construction);
         while ((num_small > 0) && (num_large > 0)) {
                 bar small = small_bars[num_small - 1];
                 bar large = large_bars[num_large - 1];
@@ -123,7 +134,8 @@ void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
                         num_large--;
                 }
         }
-        
+        SWTOCK(construction);
+        SWTICK(final);        
         int i;
 #pragma omp parallel
         {
@@ -142,6 +154,7 @@ void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
         }
         free(small_bars);
         free(large_bars);
+        SWTOCK(final);
 }
 
 /* Scale weights so their mean is 1 */
@@ -186,15 +199,18 @@ void print_interval(char *description, unsigned long interval)
 
 int main(int argc, char *argv[])
 {
+        SWRESET(generation);
+        SWRESET(normalisation);
+        SWRESET(split);
+        SWRESET(construction);
+        SWRESET(final);
+        SWRESET(sampling);
+
         if (argc > 1) {
           omp_set_num_threads(atoi(argv[1]));
         }
 
         int j;
-        DEFSW(generation);
-        DEFSW(normalisation);
-        DEFSW(construction);
-        DEFSW(sampling);
 #pragma omp parallel
         {
 #pragma omp master
@@ -218,9 +234,7 @@ int main(int argc, char *argv[])
                 SWTICK(normalisation);
                 normalise(weights, NUM_SIDES);
                 SWTOCK(normalisation);
-                SWTICK(construction);
                 make_table(weights, dartboard, aliases, NUM_SIDES);
-                SWTOCK(construction);
                 SWTICK(sampling);
 #pragma omp parallel for shared(dartboard, aliases) schedule(static) 
                 for (i = 0; i < NUM_ROLLS; i++) {
@@ -233,7 +247,9 @@ int main(int argc, char *argv[])
         }
         print_interval("Weight generation", SWGET(generation));
         print_interval("Normalisation", SWGET(normalisation));
+        print_interval("Table split", SWGET(split));
         print_interval("Table construction", SWGET(construction));
+        print_interval("Table final", SWGET(final));
         print_interval("Sampling", SWGET(sampling));
         return 0;
 }
