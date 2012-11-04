@@ -175,8 +175,8 @@ void make_table(float* weights, float *dartboard, int *aliases, int num_sides)
                         aliases[large.id] = large.id;
                 }
         }
-        free(small_bars);
-        free(large_bars);
+        free(all_small_bars);
+        free(all_large_bars);
         SWTOCK(final);
 }
 
